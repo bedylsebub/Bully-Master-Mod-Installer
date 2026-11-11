@@ -15,7 +15,9 @@ on:
       - 'BullyModPatcher.py'
       - 'build_windows.bat'
       - '.github/workflows/build-windows.yml'
-      - 'README.md'\n      - 'bully_font_asset.py'\n      - 'duck_asset.py'
+      - 'README.md'
+      - 'bully_font_asset.py'
+      - 'duck_asset.py'
 
 jobs:
   build:
