@@ -10,6 +10,7 @@ import struct
 import tempfile
 import threading
 import tkinter as tk
+import tkinter.font
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
@@ -236,29 +237,21 @@ def replace_one(source, destination, internal_path, replacement, progress=None):
             raise ValueError('Post-write verification failed')
 
 
-def load_bully_font():
-    """Register bundled Bully OTF for this process on Windows; fallback elsewhere."""
+def load_inter_font():
+    """Register the Inter font bundled by the Windows build; use a safe fallback."""
+    if sys.platform != 'win32':
+        return 'Inter'
     try:
-        from bully_font_asset import BULLY_OTF
-        if sys.platform != 'win32':
-            return 'Segoe UI'
-        fd, path = tempfile.mkstemp(suffix='.otf', prefix='bully_ui_')
-        with os.fdopen(fd, 'wb') as stream:
-            stream.write(BULLY_OTF)
+        base = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parent))
+        font_path = base / 'assets' / 'Inter.ttf'
+        if not font_path.is_file():
+            return 'Inter' if 'Inter' in tk.font.families() else 'Segoe UI'
         FR_PRIVATE = 0x10
-        loaded = ctypes.windll.gdi32.AddFontResourceExW(path, FR_PRIVATE, 0)
-        if not loaded:
-            os.unlink(path)
+        if not ctypes.windll.gdi32.AddFontResourceExW(str(font_path), FR_PRIVATE, 0):
             return 'Segoe UI'
-        def cleanup():
-            try:
-                ctypes.windll.gdi32.RemoveFontResourceExW(path, FR_PRIVATE, 0)
-                os.unlink(path)
-            except OSError:
-                pass
-        atexit.register(cleanup)
-        return 'Bully'
-    except (ImportError, OSError, AttributeError, ValueError):
+        atexit.register(lambda: ctypes.windll.gdi32.RemoveFontResourceExW(str(font_path), FR_PRIVATE, 0))
+        return 'Inter'
+    except (OSError, AttributeError, ValueError, tk.TclError):
         return 'Segoe UI'
 
 
@@ -275,7 +268,7 @@ class App:
         self.out = tk.StringVar()
         self.events = queue.Queue()
 
-        self.title_font = load_bully_font()
+        self.title_font = load_inter_font()
         style = ttk.Style(root)
         style.theme_use('clam')
         style.configure('Dark.TFrame', background='#121418')
@@ -303,6 +296,7 @@ class App:
             from duck_asset import DUCK_PNG
             import base64
             self.duck_photo = tk.PhotoImage(data=base64.b64encode(DUCK_PNG).decode('ascii'))
+            root.iconphoto(True, self.duck_photo)
             ttk.Label(footer_left, image=self.duck_photo, style='Dark.TLabel').pack(side='left', padx=(0, 8))
         except (ImportError, tk.TclError, ValueError):
             pass
@@ -327,7 +321,7 @@ class App:
         self.bar = ttk.Progressbar(content, style='Dark.Horizontal.TProgressbar', mode='determinate', maximum=len(FILES))
         self.bar.pack(fill='x')
         ttk.Label(content, text='Activity log', style='Dark.TLabel').pack(anchor='w', pady=(7, 3))
-        self.log = tk.Text(content, height=3, state='disabled', wrap='word', font=('Consolas', 9),
+        self.log = tk.Text(content, height=3, state='disabled', wrap='word', font=(self.title_font, 10),
                            bg='#1b2028', fg='#cfd6e0', insertbackground='#ffffff', relief='flat',
                            highlightthickness=1, highlightbackground='#303743', padx=10, pady=6)
         self.log.pack(fill='both', expand=True)
@@ -438,6 +432,11 @@ class App:
 
 
 if __name__ == '__main__':
+    if sys.platform == 'win32':
+        try:
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('Bedylsebub.BullyMasterModInstaller.2')
+        except (OSError, AttributeError):
+            pass
     root = tk.Tk()
     App(root)
     root.mainloop()
