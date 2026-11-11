@@ -31,10 +31,28 @@ jobs:
           python-version: '3.12'
       - name: Check Python syntax
         run: python -m py_compile BullyModPatcher.py
-      - name: Install PyInstaller
-        run: python -m pip install "pyinstaller>=6,<7"
+      - name: Install packaging dependencies
+        run: python -m pip install "pyinstaller>=6,<7" "Pillow>=10,<13"
+      - name: Fetch Inter font from Google Fonts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force assets | Out-Null
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/Inter%5Bopsz,wght%5D.ttf" -OutFile "assets/Inter.ttf"
+          if ((Get-Item "assets/Inter.ttf").Length -lt 10000) { throw "Inter font download failed" }
+      - name: Create Windows icon from duck artwork
+        shell: pwsh
+        run: |
+          @'
+          from io import BytesIO
+          from PIL import Image
+          from duck_asset import DUCK_PNG
+          image = Image.open(BytesIO(DUCK_PNG)).convert("RGBA")
+          image.save("assets/duck.ico", format="ICO", sizes=[(16,16),(24,24),(32,32),(48,48),(64,64),(128,128),(256,256)])
+          '@ | Set-Content -Encoding utf8 create_icon.py
+          python create_icon.py
       - name: Build portable Windows executable
-        run: pyinstaller --noconfirm --clean --onefile --windowed --name BullyModPatcher BullyModPatcher.py
+        shell: pwsh
+        run: pyinstaller --noconfirm --clean --onefile --windowed --name BullyModPatcher --icon "assets/duck.ico" --add-data "assets/Inter.ttf;assets" BullyModPatcher.py
       - name: Upload executable artifact
         uses: actions/upload-artifact@v4
         with:
