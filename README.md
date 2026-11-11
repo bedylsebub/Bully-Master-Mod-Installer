@@ -2,13 +2,13 @@
 
 An easy way to install the Bully MasterMod.
 
-A Windows graphical utility that patches a **user-provided Bully PS2 ISO** with files from a separately downloaded MasterMod folder.
+A Windows graphical utility that patches a **user provided Bully PS2 ISO** with files from a separately downloaded MasterMod folder.
 
 ## Get the Windows application
 
 Open **Actions → Build Windows executable → latest successful run**, download the **Bully-MasterMod-Easy-Installer-Windows** artifact, extract it, and run `BullyModPatcher.exe`.
 
-This is a portable Windows executable: no Python installation is needed to run it. GitHub Actions must finish successfully before an executable artifact is available. The executable is unsigned and Windows SmartScreen may show a warning.
+The executable is unsigned and Windows SmartScreen may show a warning.
 
 ## Use
 
