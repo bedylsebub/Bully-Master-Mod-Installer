@@ -4,16 +4,19 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    tags:
+      - 'v*'
     paths:
       - 'BullyModPatcher.py'
       - 'build_windows.bat'
       - '.github/workflows/build-windows.yml'
+      - 'README.md'
 
 jobs:
   build:
     runs-on: windows-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -25,9 +28,16 @@ jobs:
         run: python -m pip install "pyinstaller>=6,<7"
       - name: Build portable Windows executable
         run: pyinstaller --noconfirm --clean --onefile --windowed --name BullyModPatcher BullyModPatcher.py
-      - name: Upload executable
+      - name: Upload executable artifact
         uses: actions/upload-artifact@v4
         with:
           name: Bully-MasterMod-Easy-Installer-Windows
           path: dist/BullyModPatcher.exe
           if-no-files-found: error
+      - name: Publish GitHub Release for version tags
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          gh release create "${{ github.ref_name }}" "dist/BullyModPatcher.exe" --title "Bully MasterMod Easy Installer ${{ github.ref_name }}" --generate-notes --verify-tag
