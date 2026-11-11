@@ -235,30 +235,64 @@ def replace_one(source, destination, internal_path, replacement, progress=None):
 class App:
     def __init__(self, root):
         self.root = root
-        root.title('Bully Master Mod ISO Patcher')
-        root.geometry('770x495')
-        root.minsize(690, 440)
+        root.title('Bully MasterMod Easy Installer')
+        root.geometry('800x585')
+        root.minsize(700, 545)
+        root.configure(bg='#121418')
+
         self.iso = tk.StringVar()
         self.mod = tk.StringVar()
         self.out = tk.StringVar()
         self.events = queue.Queue()
-        outer = ttk.Frame(root, padding=18)
+
+        style = ttk.Style(root)
+        style.theme_use('clam')
+        style.configure('Dark.TFrame', background='#121418')
+        style.configure('Dark.TLabel', background='#121418', foreground='#e8eaf0', font=('Segoe UI', 10))
+        style.configure('Muted.TLabel', background='#121418', foreground='#9aa4b2', font=('Segoe UI', 9))
+        style.configure('Title.TLabel', background='#121418', foreground='#f6f7fa', font=('Segoe UI', 20, 'bold'))
+        style.configure('Dark.TEntry', fieldbackground='#252a33', foreground='#f7f7fa', bordercolor='#414957', padding=7)
+        style.map('Dark.TEntry', fieldbackground=[('disabled', '#252a33')], foreground=[('disabled', '#9aa4b2')])
+        style.configure('Dark.TButton', background='#343b47', foreground='#ffffff', padding=(13, 8), font=('Segoe UI', 9, 'bold'))
+        style.map('Dark.TButton', background=[('active', '#465163'), ('pressed', '#29303b')])
+        style.configure('Accent.TButton', background='#bc2837', foreground='#ffffff', padding=(22, 10), font=('Segoe UI', 10, 'bold'))
+        style.map('Accent.TButton', background=[('active', '#d63c4b'), ('pressed', '#8f1e2b'), ('disabled', '#5a3038')])
+        style.configure('Dark.Horizontal.TProgressbar', troughcolor='#262c35', background='#c93646', bordercolor='#262c35', thickness=11)
+
+        outer = ttk.Frame(root, padding=(26, 22, 26, 16), style='Dark.TFrame')
         outer.pack(fill='both', expand=True)
-        ttk.Label(outer, text='Bully Master Mod ISO Patcher', font=('Segoe UI', 17, 'bold')).pack(anchor='w')
-        ttk.Label(outer, text='Select the original USA PS2 ISO and the extracted MasterMod folder.').pack(anchor='w', pady=(3, 17))
+        ttk.Label(outer, text='BULLY MASTER MOD INSTALLER', style='Title.TLabel', anchor='center').pack(fill='x')
+        ttk.Label(outer, text='Patch your PS2 ISO with the extracted MasterMod files', style='Muted.TLabel', anchor='center').pack(fill='x', pady=(4, 22))
+
         for label, var, kind in [('Original Bully ISO', self.iso, 'iso'), ('MasterMod folder', self.mod, 'folder'), ('New patched ISO', self.out, 'save')]:
-            ttk.Label(outer, text=label).pack(anchor='w')
-            line = ttk.Frame(outer)
-            line.pack(fill='x', pady=(3, 12))
-            ttk.Entry(line, textvariable=var).pack(side='left', fill='x', expand=True)
-            ttk.Button(line, text='Browse…', command=lambda v=var, k=kind: self.browse(v, k)).pack(side='left', padx=(8, 0))
-        self.button = ttk.Button(outer, text='Patch ISO', command=self.start)
-        self.button.pack(anchor='w', pady=(1, 8))
-        self.bar = ttk.Progressbar(outer, mode='determinate', maximum=len(FILES))
+            ttk.Label(outer, text=label, style='Dark.TLabel').pack(anchor='w')
+            line = ttk.Frame(outer, style='Dark.TFrame')
+            line.pack(fill='x', pady=(5, 13))
+            ttk.Entry(line, textvariable=var, style='Dark.TEntry').pack(side='left', fill='x', expand=True)
+            ttk.Button(line, text='Browse...', style='Dark.TButton', command=lambda v=var, k=kind: self.browse(v, k)).pack(side='left', padx=(9, 0))
+
+        self.button = ttk.Button(outer, text='PATCH ISO', style='Accent.TButton', command=self.start)
+        self.button.pack(anchor='center', pady=(2, 13))
+        self.bar = ttk.Progressbar(outer, style='Dark.Horizontal.TProgressbar', mode='determinate', maximum=len(FILES))
         self.bar.pack(fill='x')
-        ttk.Label(outer, text='Activity log').pack(anchor='w', pady=(12, 3))
-        self.log = tk.Text(outer, height=8, state='disabled', wrap='word', font=('Consolas', 9))
+        ttk.Label(outer, text='Activity log', style='Dark.TLabel').pack(anchor='w', pady=(14, 5))
+        self.log = tk.Text(outer, height=7, state='disabled', wrap='word', font=('Consolas', 9),
+                           bg='#1b2028', fg='#cfd6e0', insertbackground='#ffffff', relief='flat',
+                           highlightthickness=1, highlightbackground='#303743', padx=10, pady=9)
         self.log.pack(fill='both', expand=True)
+
+        footer = ttk.Frame(outer, style='Dark.TFrame')
+        footer.pack(side='bottom', fill='x', pady=(14, 0))
+        try:
+            from duck_asset import DUCK_PNG
+            import base64
+            self.duck_photo = tk.PhotoImage(data=base64.b64encode(DUCK_PNG).decode('ascii'))
+            ttk.Label(footer, image=self.duck_photo, style='Dark.TLabel').pack(side='left', padx=(0, 9))
+        except (ImportError, tk.TclError, ValueError):
+            pass
+        ttk.Label(footer, text='made by Bedylsebub', style='Muted.TLabel').pack(side='left')
+        ttk.Label(footer, text='Unofficial community tool', style='Muted.TLabel').pack(side='right')
+
         self.note('Your original ISO will not be modified. A separate output file is created.')
         root.after(100, self.poll)
 
