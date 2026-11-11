@@ -2,6 +2,11 @@ name: Build Windows executable
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing release tag to attach the EXE to (e.g. v1.0.0); leave blank for build only'
+        required: false
+        type: string
   push:
     branches: [main]
     tags:
@@ -34,10 +39,22 @@ jobs:
           name: Bully-MasterMod-Easy-Installer-Windows
           path: dist/BullyModPatcher.exe
           if-no-files-found: error
-      - name: Publish GitHub Release for version tags
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Attach EXE to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG_INPUT: ${{ inputs.release_tag }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
         shell: pwsh
         run: |
-          gh release create "${{ github.ref_name }}" "dist/BullyModPatcher.exe" --title "Bully MasterMod Easy Installer ${{ github.ref_name }}" --generate-notes --verify-tag
+          $tag = if ($env:TAG_INPUT) { $env:TAG_INPUT } elseif ($env:REF_TYPE -eq 'tag') { $env:REF_NAME } else { '' }
+          if (-not $tag) { throw "No release tag specified." }
+          gh release view "$tag" --repo "$env:REPO" *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create "$tag" --repo "$env:REPO" --title "Bully MasterMod Easy Installer $tag" --generate-notes
+            if ($LASTEXITCODE -ne 0) { throw "Could not create release $tag" }
+          }
+          gh release upload "$tag" "dist/BullyModPatcher.exe" --repo "$env:REPO" --clobber
+          if ($LASTEXITCODE -ne 0) { throw "Could not upload executable to release $tag" }
